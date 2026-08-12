@@ -44,7 +44,13 @@
       </header>
 
       <nav class="category-bar" aria-label="分类导航">
-        <div class="category-scroll" id="categoryNav"></div>
+        <div class="category-shell">
+          <div class="view-switch" role="group" aria-label="分类方式">
+            <button class="view-button is-active" type="button" data-view="collection">收藏夹</button>
+            <button class="view-button" type="button" data-view="tag">标签</button>
+          </div>
+          <div class="category-scroll" id="categoryNav"></div>
+        </div>
       </nav>
 
       <main class="content" id="content">
