@@ -65,7 +65,7 @@ button:focus-visible {
 
 .hero-inner,
 .content,
-.category-scroll,
+.category-shell,
 .footer {
   width: min(1180px, calc(100% - 48px));
   margin: 0 auto;
@@ -191,8 +191,48 @@ h1 {
   backdrop-filter: blur(12px);
 }
 
+.category-shell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.view-switch {
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #f3f1eb;
+}
+
+.view-button {
+  height: 30px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: #8a877f;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 140ms ease, color 140ms ease, box-shadow 140ms ease;
+}
+
+.view-button:hover {
+  color: var(--ink-soft);
+}
+
+.view-button.is-active {
+  background: var(--paper);
+  color: var(--wechat-green-dark);
+  box-shadow: 0 1px 4px rgb(50 45 35 / 8%);
+}
+
 .category-scroll {
   display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
   gap: 6px;
   overflow-x: auto;
   padding-top: 11px;
@@ -218,6 +258,10 @@ h1 {
 .category-link.is-active {
   background: var(--wechat-green-pale);
   color: var(--wechat-green-dark);
+}
+
+.category-link.is-tag-link {
+  font-size: 12px;
 }
 
 .content {
@@ -246,6 +290,15 @@ h1 {
   font-size: 25px;
   font-weight: 620;
   letter-spacing: 0.025em;
+}
+
+.tag-heading h2::before {
+  margin-right: 7px;
+  color: var(--wechat-green-dark);
+  content: "#";
+  font-family: var(--sans);
+  font-size: 0.72em;
+  font-weight: 600;
 }
 
 .collection-count {
@@ -459,7 +512,8 @@ h1 {
   line-height: 1.7;
 }
 
-.error-state strong {
+.error-state strong,
+.empty-state strong {
   color: var(--ink-soft);
   font-family: var(--serif);
   font-size: 20px;
@@ -497,7 +551,7 @@ h1 {
 
   .hero-inner,
   .content,
-  .category-scroll,
+  .category-shell,
   .footer {
     width: min(100% - 30px, 1180px);
   }
@@ -525,6 +579,14 @@ h1 {
 
   .search-box kbd {
     display: none;
+  }
+
+  .category-shell {
+    gap: 8px;
+  }
+
+  .view-button {
+    padding: 0 8px;
   }
 
   .content {
