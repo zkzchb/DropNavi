@@ -1,0 +1,15 @@
+{
+  "name": "dropnavi",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A lightweight Raindrop.io powered navigation site on Cloudflare Workers.",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --test-scheduled",
+    "deploy": "wrangler deploy",
+    "check": "node --check src/index.js && node --check public/app.js"
+  },
+  "devDependencies": {
+    "wrangler": "^4.45.0"
+  }
+}

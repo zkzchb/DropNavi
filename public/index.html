@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f3f1eb" />
+    <meta
+      name="description"
+      content="DropNavi — 从 Raindrop.io 自动同步的轻量网址导航。"
+    />
+    <title>DropNavi</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="site-shell">
+      <header class="hero">
+        <div class="hero-inner">
+          <div class="brand-row">
+            <div>
+              <p class="eyebrow">RAINDROP · NAVIGATION</p>
+              <h1>DropNavi</h1>
+              <p class="subtitle">把收藏留在 Raindrop，把浏览留给这里。</p>
+            </div>
+            <div class="sync-state" id="syncState" aria-live="polite">
+              <span class="sync-dot"></span>
+              <span>正在读取收藏</span>
+            </div>
+          </div>
+
+          <label class="search-box" for="searchInput">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z" />
+            </svg>
+            <input
+              id="searchInput"
+              type="search"
+              autocomplete="off"
+              placeholder="搜索网站、域名、简介或标签"
+            />
+            <kbd>/</kbd>
+          </label>
+        </div>
+      </header>
+
+      <nav class="category-bar" aria-label="分类导航">
+        <div class="category-scroll" id="categoryNav"></div>
+      </nav>
+
+      <main class="content" id="content">
+        <div class="loading-state" id="loadingState">
+          <div class="loading-mark">D</div>
+          <p>正在整理你的收藏…</p>
+        </div>
+      </main>
+
+      <footer class="footer">
+        <span>DropNavi</span>
+        <span class="footer-separator">·</span>
+        <span>由 Raindrop.io 提供数据</span>
+      </footer>
+    </div>
+
+    <template id="siteCardTemplate">
+      <a class="site-card" target="_blank" rel="noopener noreferrer">
+        <div class="site-avatar" aria-hidden="true"></div>
+        <div class="site-copy">
+          <div class="site-title-row">
+            <h3></h3>
+            <span class="favorite-mark" title="Raindrop 收藏">★</span>
+          </div>
+          <p class="site-domain"></p>
+          <p class="site-excerpt"></p>
+          <div class="site-tags"></div>
+        </div>
+        <svg class="site-arrow" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="m9 18 6-6-6-6" />
+        </svg>
+      </a>
+    </template>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
