@@ -1,6 +1,7 @@
 const state = {
   snapshot: null,
   query: "",
+  view: loadPreferredView(),
 };
 
 const content = document.querySelector("#content");
@@ -8,12 +9,15 @@ const categoryNav = document.querySelector("#categoryNav");
 const searchInput = document.querySelector("#searchInput");
 const syncState = document.querySelector("#syncState");
 const cardTemplate = document.querySelector("#siteCardTemplate");
+const viewButtons = [...document.querySelectorAll(".view-button")];
 let activeObserver = null;
 
 init();
 
 async function init() {
   bindSearch();
+  bindViewSwitch();
+  syncViewButtons();
 
   try {
     const response = await fetch("/api/navigation", {
@@ -61,17 +65,57 @@ function bindSearch() {
   });
 }
 
+function bindViewSwitch() {
+  for (const button of viewButtons) {
+    button.addEventListener("click", () => {
+      const nextView = button.dataset.view;
+      if (!nextView || nextView === state.view) return;
+
+      state.view = nextView;
+      savePreferredView(nextView);
+      syncViewButtons();
+      render();
+      window.scrollTo({ top: document.querySelector(".category-bar")?.offsetTop ?? 0 });
+    });
+  }
+}
+
+function syncViewButtons() {
+  for (const button of viewButtons) {
+    const active = button.dataset.view === state.view;
+    button.classList.toggle("is-active", active);
+    button.setAttribute("aria-pressed", String(active));
+  }
+}
+
 function render() {
   if (!state.snapshot) return;
-
-  const { collections, items } = state.snapshot;
-  const childrenByParent = groupBy(collections, (collection) => collection.parentId ?? "root");
-  const itemsByCollection = groupBy(items.filter(matchesQuery), (item) => item.collectionId);
-  const rootCollections = childrenByParent.get("root") ?? [];
 
   content.replaceChildren();
   categoryNav.replaceChildren();
 
+  const filteredItems = state.snapshot.items.filter(matchesQuery);
+
+  if (state.view === "tag") {
+    renderTagView(filteredItems);
+  } else {
+    renderCollectionView(filteredItems);
+  }
+
+  setupActiveSectionObserver();
+
+  if (state.query) {
+    syncState.querySelector("span:last-child").textContent = `找到 ${filteredItems.length} 个结果`;
+  } else {
+    renderSyncState(state.snapshot.updatedAt);
+  }
+}
+
+function renderCollectionView(filteredItems) {
+  const { collections } = state.snapshot;
+  const childrenByParent = groupBy(collections, (collection) => collection.parentId ?? "root");
+  const itemsByCollection = groupBy(filteredItems, (item) => item.collectionId);
+  const rootCollections = childrenByParent.get("root") ?? [];
   let visibleCount = 0;
 
   for (const root of rootCollections) {
@@ -80,23 +124,70 @@ function render() {
 
     visibleCount += sectionData.itemCount;
     content.append(buildRootSection(root, childrenByParent, itemsByCollection));
-    categoryNav.append(buildCategoryLink(root, sectionData.itemCount));
+    categoryNav.append(buildCategoryLink(root.title, sectionData.itemCount, sectionId(root.id)));
   }
 
   if (visibleCount === 0) {
-    const empty = document.createElement("div");
-    empty.className = "empty-state";
-    empty.innerHTML = `<div><strong>没有找到匹配的网站</strong><p>换一个关键词，或者按 Esc 清空搜索。</p></div>`;
-    content.append(empty);
+    renderEmptyState();
+  }
+}
+
+function renderTagView(filteredItems) {
+  const groups = buildTagGroups(filteredItems);
+
+  if (groups.length === 0) {
+    renderEmptyState();
+    return;
   }
 
-  setupActiveSectionObserver();
+  for (const group of groups) {
+    const section = document.createElement("section");
+    section.className = "collection-section tag-section";
+    section.id = tagSectionId(group.tag);
 
-  if (state.query) {
-    syncState.querySelector("span:last-child").textContent = `找到 ${visibleCount} 个结果`;
-  } else {
-    renderSyncState(state.snapshot.updatedAt);
+    const heading = document.createElement("div");
+    heading.className = "collection-heading tag-heading";
+    heading.innerHTML = `<h2></h2><span class="collection-count"></span>`;
+    heading.querySelector("h2").textContent = group.tag;
+    heading.querySelector(".collection-count").textContent = String(group.items.length).padStart(2, "0");
+    section.append(heading, buildGrid(group.items));
+
+    content.append(section);
+    categoryNav.append(buildCategoryLink(group.tag, group.items.length, section.id, true));
   }
+}
+
+function buildTagGroups(items) {
+  const tagMap = new Map();
+  const untagged = [];
+
+  for (const item of items) {
+    const tags = uniqueTags(item.tags);
+
+    if (tags.length === 0) {
+      untagged.push(item);
+      continue;
+    }
+
+    for (const tag of tags) {
+      const group = tagMap.get(tag) ?? [];
+      group.push(item);
+      tagMap.set(tag, group);
+    }
+  }
+
+  const groups = [...tagMap.entries()]
+    .map(([tag, groupItems]) => ({ tag, items: groupItems }))
+    .sort((a, b) => {
+      if (a.items.length !== b.items.length) return b.items.length - a.items.length;
+      return a.tag.localeCompare(b.tag, "zh-CN", { numeric: true });
+    });
+
+  if (untagged.length > 0) {
+    groups.push({ tag: "无标签", items: untagged });
+  }
+
+  return groups;
 }
 
 function buildRootSection(root, childrenByParent, itemsByCollection) {
@@ -172,7 +263,7 @@ function buildSiteCard(item) {
   card.querySelector(".site-excerpt").textContent = item.excerpt;
 
   const tags = card.querySelector(".site-tags");
-  for (const tag of item.tags.slice(0, 3)) {
+  for (const tag of uniqueTags(item.tags).slice(0, 3)) {
     const chip = document.createElement("span");
     chip.className = "site-tag";
     chip.textContent = tag;
@@ -182,12 +273,12 @@ function buildSiteCard(item) {
   return card;
 }
 
-function buildCategoryLink(collection, itemCount) {
+function buildCategoryLink(label, itemCount, targetId, isTag = false) {
   const link = document.createElement("a");
-  link.className = "category-link";
-  link.href = `#${sectionId(collection.id)}`;
-  link.textContent = `${collection.title} ${itemCount}`;
-  link.dataset.sectionId = sectionId(collection.id);
+  link.className = `category-link${isTag ? " is-tag-link" : ""}`;
+  link.href = `#${targetId}`;
+  link.textContent = `${isTag ? "#" : ""}${label} ${itemCount}`;
+  link.dataset.sectionId = targetId;
   return link;
 }
 
@@ -229,6 +320,13 @@ function renderSyncState(updatedAt) {
   label.textContent = Number.isNaN(date.getTime())
     ? "已同步"
     : `同步于 ${formatDateTime(date)}`;
+}
+
+function renderEmptyState() {
+  const empty = document.createElement("div");
+  empty.className = "empty-state";
+  empty.innerHTML = `<div><strong>没有找到匹配的网站</strong><p>换一个关键词，或者按 Esc 清空搜索。</p></div>`;
+  content.append(empty);
 }
 
 function renderError() {
@@ -283,8 +381,21 @@ function groupBy(items, keyFn) {
   return map;
 }
 
+function uniqueTags(tags) {
+  if (!Array.isArray(tags)) return [];
+  return [...new Set(tags.map((tag) => String(tag).trim()).filter(Boolean))];
+}
+
 function sectionId(id) {
   return `collection-${String(id).replace(/[^a-zA-Z0-9_-]/g, "-")}`;
+}
+
+function tagSectionId(tag) {
+  if (tag === "无标签") return "tag-untagged";
+  const encoded = encodeURIComponent(tag)
+    .replace(/%/g, "")
+    .replace(/[^a-zA-Z0-9_-]/g, "-");
+  return `tag-${encoded}`;
 }
 
 function firstReadableCharacter(value) {
@@ -300,6 +411,23 @@ function formatDateTime(date) {
     minute: "2-digit",
     hour12: false,
   }).format(date);
+}
+
+function loadPreferredView() {
+  try {
+    const saved = localStorage.getItem("dropnavi:view");
+    return saved === "tag" ? "tag" : "collection";
+  } catch {
+    return "collection";
+  }
+}
+
+function savePreferredView(view) {
+  try {
+    localStorage.setItem("dropnavi:view", view);
+  } catch {
+    // Ignore storage restrictions; the current view still works.
+  }
 }
 
 function isEditable(element) {
