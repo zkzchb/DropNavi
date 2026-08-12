@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "dropnavi",
+  "name": "navigation",
   "main": "src/index.js",
   "compatibility_date": "2026-08-12",
   "compatibility_flags": ["nodejs_compat"],
