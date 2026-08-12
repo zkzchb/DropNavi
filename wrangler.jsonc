@@ -4,6 +4,10 @@
   "main": "src/index.js",
   "compatibility_date": "2026-08-12",
   "compatibility_flags": ["nodejs_compat"],
+  "keep_vars": true,
+  "secrets": {
+    "required": ["RAINDROP_TOKEN"]
+  },
   "assets": {
     "directory": "./public",
     "binding": "ASSETS",
