@@ -6,6 +6,7 @@ const state = {
 
 const content = document.querySelector("#content");
 const categoryNav = document.querySelector("#categoryNav");
+const categoryBar = document.querySelector(".category-bar");
 const searchInput = document.querySelector("#searchInput");
 const syncState = document.querySelector("#syncState");
 const cardTemplate = document.querySelector("#siteCardTemplate");
@@ -17,6 +18,8 @@ init();
 async function init() {
   bindSearch();
   bindViewSwitch();
+  bindCategoryNavigation();
+  bindHashNavigation();
   syncViewButtons();
 
   try {
@@ -30,8 +33,11 @@ async function init() {
     }
 
     state.snapshot = data;
+    applyViewFromHash();
+    syncViewButtons();
     render();
     renderSyncState(data.updatedAt);
+    requestAnimationFrame(() => scrollToHashTarget(false));
   } catch (error) {
     console.error(error);
     renderError();
@@ -73,11 +79,45 @@ function bindViewSwitch() {
 
       state.view = nextView;
       savePreferredView(nextView);
+      clearHash();
       syncViewButtons();
       render();
-      window.scrollTo({ top: document.querySelector(".category-bar")?.offsetTop ?? 0 });
+      window.scrollTo({
+        top: categoryBar?.offsetTop ?? 0,
+        behavior: prefersReducedMotion() ? "auto" : "smooth",
+      });
     });
   }
+}
+
+function bindCategoryNavigation() {
+  categoryNav.addEventListener("click", (event) => {
+    const link = event.target.closest(".category-link");
+    if (!link) return;
+
+    event.preventDefault();
+    const targetId = link.dataset.sectionId;
+    if (!targetId) return;
+
+    scrollToSection(targetId, true);
+  });
+}
+
+function bindHashNavigation() {
+  window.addEventListener("hashchange", () => {
+    if (!state.snapshot) return;
+
+    const previousView = state.view;
+    applyViewFromHash();
+
+    if (state.view !== previousView) {
+      savePreferredView(state.view);
+      syncViewButtons();
+      render();
+    }
+
+    requestAnimationFrame(() => scrollToHashTarget(false));
+  });
 }
 
 function syncViewButtons() {
@@ -361,13 +401,79 @@ function setupActiveSectionObserver() {
       for (const link of links) link.classList.remove("is-active");
       const active = linkBySection.get(visible.target.id);
       active?.classList.add("is-active");
-      active?.scrollIntoView({ block: "nearest", inline: "nearest" });
+      scrollCategoryLinkIntoView(active);
     },
     { rootMargin: "-80px 0px -70% 0px", threshold: 0 },
   );
 
   for (const section of sections) observer.observe(section);
   activeObserver = observer;
+}
+
+function scrollCategoryLinkIntoView(link) {
+  if (!link) return;
+
+  const navRect = categoryNav.getBoundingClientRect();
+  const linkRect = link.getBoundingClientRect();
+  const padding = 18;
+
+  if (linkRect.left >= navRect.left + padding && linkRect.right <= navRect.right - padding) {
+    return;
+  }
+
+  const left = link.offsetLeft - categoryNav.clientWidth / 2 + link.clientWidth / 2;
+  categoryNav.scrollTo({
+    left: Math.max(0, left),
+    behavior: prefersReducedMotion() ? "auto" : "smooth",
+  });
+}
+
+function scrollToSection(targetId, updateHash) {
+  const target = document.getElementById(targetId);
+  if (!target) return;
+
+  target.scrollIntoView({
+    block: "start",
+    behavior: prefersReducedMotion() ? "auto" : "smooth",
+  });
+
+  if (updateHash) {
+    const nextUrl = `${window.location.pathname}${window.location.search}#${targetId}`;
+    history.pushState(null, "", nextUrl);
+  }
+}
+
+function scrollToHashTarget(smooth = true) {
+  const targetId = currentHashTargetId();
+  if (!targetId) return;
+
+  scrollToSection(targetId, false, smooth);
+}
+
+function applyViewFromHash() {
+  const targetId = currentHashTargetId();
+  if (!targetId) return;
+
+  if (targetId.startsWith("tag-")) {
+    state.view = "tag";
+  } else if (targetId.startsWith("collection-")) {
+    state.view = "collection";
+  }
+}
+
+function currentHashTargetId() {
+  if (!window.location.hash || window.location.hash.length <= 1) return "";
+
+  try {
+    return decodeURIComponent(window.location.hash.slice(1));
+  } catch {
+    return window.location.hash.slice(1);
+  }
+}
+
+function clearHash() {
+  if (!window.location.hash) return;
+  history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
 }
 
 function groupBy(items, keyFn) {
@@ -428,6 +534,10 @@ function savePreferredView(view) {
   } catch {
     // Ignore storage restrictions; the current view still works.
   }
+}
+
+function prefersReducedMotion() {
+  return window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
 }
 
 function isEditable(element) {
