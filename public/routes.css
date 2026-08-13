@@ -34,13 +34,14 @@
   margin: 0 0 7px;
   color: var(--wechat-green-dark);
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 750;
   letter-spacing: 0.16em;
 }
 
 .directory-header h2,
 .detail-title-row h2 {
   margin: 0;
+  color: var(--ink);
   font-family: var(--serif);
   font-size: 28px;
   font-weight: 620;
@@ -57,7 +58,7 @@
 
 .page-count {
   flex: 0 0 auto;
-  color: #aaa79f;
+  color: #858f87;
   font-size: 12px;
 }
 
@@ -80,21 +81,22 @@
   background: var(--card);
   color: inherit;
   text-decoration: none;
+  box-shadow: 0 2px 9px rgb(34 55 41 / 3%);
   transition: transform 150ms ease, border-color 150ms ease, box-shadow 150ms ease, background 150ms ease;
 }
 
 .directory-card:hover {
   transform: translateY(-1px);
-  border-color: #d8d5cc;
+  border-color: rgb(7 193 96 / 22%);
   background: var(--paper);
-  box-shadow: 0 6px 20px rgb(50 45 35 / 6%);
+  box-shadow: 0 8px 24px rgb(34 55 41 / 9%);
 }
 
 .directory-title {
   overflow: hidden;
   color: var(--ink-soft);
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 650;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -103,10 +105,14 @@
   color: var(--wechat-green-dark);
 }
 
+.tag-directory-card:hover {
+  background: #fbfefc;
+}
+
 .directory-count {
   flex: 0 0 auto;
   min-width: 24px;
-  color: #aaa79f;
+  color: #858f87;
   font-family: Georgia, serif;
   font-size: 12px;
   text-align: right;
@@ -117,12 +123,13 @@
   align-items: center;
   gap: 8px;
   margin-bottom: 12px;
-  color: #aaa79f;
+  color: #858f87;
   font-size: 12px;
 }
 
 .breadcrumb a {
   color: var(--wechat-green-dark);
+  font-weight: 550;
   text-decoration: none;
 }
 
@@ -142,6 +149,7 @@
   margin-top: 15px;
   color: var(--wechat-green-dark);
   font-size: 13px;
+  font-weight: 550;
   text-decoration: none;
 }
 
