@@ -33,9 +33,12 @@ function renderTopNavigation(){
 }
 
 function renderCollectionOverview(){
-  const {collections,items}=state.snapshot,filtered=items.filter(matchesQuery),children=groupBy(collections,c=>c.parentId??"root"),byCollection=groupBy(filtered,i=>i.collectionId),roots=children.get("root")??[];let visible=0;
-  for(const root of roots){const n=collectSection(root.id,children,byCollection);if(!n)continue;visible+=n;content.append(rootSection(root,children,byCollection,true));}
-  if(!visible)renderEmptyState();return filtered.length;
+  const {collections,items}=state.snapshot,children=groupBy(collections,c=>c.parentId??"root"),byCollection=groupBy(items,i=>i.collectionId),roots=children.get("root")??[],visible=roots.filter(c=>!state.query||c.title.toLocaleLowerCase("zh-CN").includes(state.query));
+  content.append(directoryHeader("收藏夹","按 Raindrop 收藏夹浏览。点击一个收藏夹，再显示其中的网站。",visible.length));
+  if(!visible.length){renderEmptyState("没有找到匹配的收藏夹","换一个关键词，或者按 Esc 清空搜索。");return 0;}
+  const g=document.createElement("div");g.className="directory-grid";
+  for(const c of visible){const a=document.createElement("a");a.className="directory-card collection-directory-card";a.href=collectionPath(c.id);a.dataset.route="";const t=document.createElement("span");t.className="directory-title";t.textContent=c.title;const n=document.createElement("span");n.className="directory-count";n.textContent=String(collectSection(c.id,children,byCollection));a.append(t,n);g.append(a);}
+  content.append(g);return visible.length;
 }
 
 function renderCollectionDetail(id){
@@ -73,11 +76,11 @@ function itemMatchesTag(item,tag){const tags=uniqueTags(item.tags);if(tag==="无
 function matchesQuery(i){if(!state.query)return true;return [i.title,i.domain,i.excerpt,...(i.tags??[])].join(" ").toLocaleLowerCase("zh-CN").includes(state.query);}
 
 function renderSyncState(updatedAt){syncState.classList.remove("is-error");const l=syncState.querySelector("span:last-child");if(!updatedAt){l.textContent="已连接 Raindrop";return;}const d=new Date(updatedAt);l.textContent=Number.isNaN(d.getTime())?"已同步":`同步于 ${formatDateTime(d)}`;}
-function renderEmptyState(){const e=document.createElement("div");e.className="empty-state";e.innerHTML=`<div><strong>没有找到匹配的网站</strong><p>换一个关键词，或者按 Esc 清空搜索。</p></div>`;content.append(e);}
+function renderEmptyState(title="没有找到匹配的网站",message="换一个关键词，或者按 Esc 清空搜索。"){const e=document.createElement("div");e.className="empty-state";const inner=document.createElement("div"),strong=document.createElement("strong"),p=document.createElement("p");strong.textContent=title;p.textContent=message;inner.append(strong,p);e.append(inner);content.append(e);}
 function renderNotFound(message="这个页面不存在。",backPath="/"){categoryNav.replaceChildren();const box=document.createElement("div");box.className="error-state";const inner=document.createElement("div"),h=document.createElement("strong"),p=document.createElement("p"),a=document.createElement("a");h.textContent="没有找到内容";p.textContent=message;a.className="back-link";a.href=backPath;a.dataset.route="";a.textContent="返回导航";inner.append(h,p,a);box.append(inner);content.append(box);}
 function renderError(){categoryNav.replaceChildren();content.innerHTML=`<div class="error-state"><div><strong>导航数据尚未准备好</strong><p>项目已经运行，但还没有成功同步 Raindrop 数据。<br />请检查 RAINDROP_TOKEN Secret。</p></div></div>`;}
 
-function updateSearchPlaceholder(){const r=state.route;if(r.kind==="tag-detail")searchInput.placeholder=`在 #${r.tag} 中搜索`;else if(r.kind==="collection-detail"){const c=findCollection(r.collectionId);searchInput.placeholder=c?`在 ${c.title} 中搜索`:"搜索网站";}else if(r.kind==="tag-overview")searchInput.placeholder="搜索标签、网站、域名或简介";else searchInput.placeholder="搜索网站、域名、简介或标签";}
+function updateSearchPlaceholder(){const r=state.route;if(r.kind==="tag-detail")searchInput.placeholder=`在 #${r.tag} 中搜索`;else if(r.kind==="collection-detail"){const c=findCollection(r.collectionId);searchInput.placeholder=c?`在 ${c.title} 中搜索`:"搜索网站";}else if(r.kind==="collection-overview")searchInput.placeholder="搜索收藏夹";else if(r.kind==="tag-overview")searchInput.placeholder="搜索标签、网站、域名或简介";else searchInput.placeholder="搜索网站、域名、简介或标签";}
 function updatePageMeta(){const r=state.route;let t="DropNavi";if(r.kind==="tag-overview")t="标签 · DropNavi";else if(r.kind==="tag-detail")t=`#${r.tag} · DropNavi`;else if(r.kind==="collection-detail"){const c=findCollection(r.collectionId);if(c)t=`${c.title} · DropNavi`;}else if(r.kind==="not-found")t="未找到 · DropNavi";document.title=t;}
 function syncViewLinks(){for(const a of viewLinks){const active=a.dataset.view===state.route.view;a.classList.toggle("is-active",active);if(active)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current");}}
 
