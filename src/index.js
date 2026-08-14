@@ -111,10 +111,10 @@ async function syncFromRaindrop(env, reason) {
     fetchAllRaindrops(env.RAINDROP_TOKEN),
   ]);
 
-  const collections = [
+  const collections = deduplicateCollections([
     ...(rootCollections.items ?? []),
     ...(childCollections.items ?? []),
-  ];
+  ]);
 
   const snapshot = buildSnapshot(collections, raindrops);
   await env.NAV_DATA.put(SNAPSHOT_KEY, JSON.stringify(snapshot));
@@ -128,6 +128,17 @@ async function syncFromRaindrop(env, reason) {
   }));
 
   return snapshot;
+}
+
+function deduplicateCollections(collections) {
+  const byId = new Map();
+
+  for (const collection of collections) {
+    if (!collection || collection._id == null) continue;
+    byId.set(String(collection._id), collection);
+  }
+
+  return [...byId.values()];
 }
 
 async function fetchAllRaindrops(token) {
